@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>술자리 미니게임 </title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body {
+      min-height: 100vh;
+      background: #121017;
+      color: #fff8f0;
+      display: flex;
+      justify-content: center;
+      padding: 18px 12px;
+      user-select: none;
+    }
+    .app { width: 100%; max-width: 620px; }
+    .header { text-align: center; margin-bottom: 14px; }
+    .header h1 { font-size: 1.5rem; font-weight: 900; color: #ffbe0b; }
+    .header p { font-size: 0.86rem; color: #b4a9c2; margin-top: 4px; }
+
+    /* 7개 게임 탭 */
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .tab-btn {
+      background: #211b29;
+      color: #d6cde0;
+      border: 1px solid #362c44;
+      padding: 10px 4px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      word-break: keep-all;
+    }
+    .tab-btn.active {
+      background: #ff5400;
+      color: #ffffff;
+      border-color: #ff5400;
+    }
+
+    .panel {
+      background: #1c1724;
+      border: 1px solid #322840;
+      border-radius: 22px;
+      padding: 20px 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+      text-align: center;
+    }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .ctrl-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+      color: #d6cde0;
+    }
+    select, input[type="text"] {
+      background: #2a2236;
+      color: #fff;
+      border: 1px solid #483a5c;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .btn-main {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      background: #ff5400;
+      color: #fff;
+      font-size: 1.02rem;
+      font-weight: 900;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-main:hover { background: #e04800; }
+    .btn-main.reveal-ready {
+      background: #16a34a;
+      animation: pulseBtn 0.9s infinite alternate;
+    }
+    @keyframes pulseBtn {
+      from { transform: scale(1); }
+      to { transform: scale(1.015); }
+    }
+    .btn-sub {
+      padding: 10px 14px;
+      border: 1px solid #493b5e;
+      border-radius: 12px;
+      background: #292036;
+      color: #f3ecfa;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-sub:hover { background: #362947; }
+
+    /* 15초 타이머 바 */
+    .timer-box {
+      background: #15111c;
+      border: 1px solid #392d4a;
+      border-radius: 14px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .timer-num {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #4ade80;
+      min-width: 64px;
+      text-align: left;
+    }
+    .timer-num.urgent { color: #f87171; }
+    .timer-alert {
+      font-size: 0.92rem;
+      font-weight: 900;
+      color: #fbbf24;
+      flex: 1;
+      text-align: right;
+    }
+    .timer-alert.timeout {
+      color: #ff6b81;
+    }
+
+    /* 1. 실시간 사다리타기 */
+    .ladder-picks {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .pick-num-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid #4e3f66;
+      background: #2b2238;
+      color: #ffbe0b;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .pick-num-btn:hover { background: #3c2f4f; }
+    canvas#ladderCanvas {
+      width: 100%;
+      max-width: 520px;
+      height: 310px;
+      background: #15111c;
+      border: 1px solid #352a45;
+      border-radius: 16px;
+      display: block;
+      margin: 0 auto;
+    }
+    .dest-editor {
+      margin-top: 12px;
+      background: #16121e;
+      border: 1px solid #2e243d;
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .dest-title {
+      font-size: 0.82rem;
+      color: #b8adc4;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .dest-inputs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+      gap: 8px;
+    }
+    .dest-item label {
+      display: block;
+      font-size: 0.75rem;
+      color: #ffbe0b;
+      margin-bottom: 3px;
+      font-weight: 800;
+    }
+    .dest-item input {
+      width: 100%;
+      padding: 7px 8px;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .ladder-status {
+      margin-top: 10px;
+      min-height: 26px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: #4ade80;
+    }
+
+    /* 2. 스릴 주사위 */
+    .dice-stage {
+      min-height: 205px;
+      background: radial-gradient(circle at top, #2f2440, #1f182b);
+      border: 1px solid #413357;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+    .dice-row { display: flex; gap: 24px; margin-bottom: 14px; }
+    .die-box {
+      width: 92px;
+      height: 92px;
+      background: #ffffff;
+      color: #141118;
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 3.1rem;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+    }
+    .die-box.thrill {
+      animation: diceShake 0.14s infinite;
+      border: 3px solid #ff5400;
+    }
+    @keyframes diceShake {
+      0% { transform: rotate(-16deg) scale(1.08); }
+      50% { transform: rotate(16deg) scale(1.12); }
+      100% { transform: rotate(-12deg) scale(1.06); }
+    }
+    .dice-sum { font-size: 1.15rem; font-weight: 900; color: #ffbe0b; }
+    .dice-call { font-size: 0.95rem; font-weight: 700; color: #fda4af; margin-top: 6px; min-height: 22px; }
+
+    /* 3. 라이어 게임 */
+    .liar-card {
+      min-height: 200px;
+      background: #261e33;
+      border: 1px solid #3d3052;
+      border-radius: 18px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .liar-turn { font-size: 1.1rem; font-weight: 900; color: #ffbe0b; margin-bottom: 6px; }
+    .liar-cat { font-size: 0.85rem; color: #c4b8d4; margin-bottom: 12px; }
+    .secret-box {
+      width: 100%;
+      max-width: 390px;
+      padding: 16px 14px;
+      border-radius: 14px;
+      background: #171220;
+      border: 1px dashed #564570;
+      font-size: 1.25rem;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+    .secret-box.is-liar {
+      background: #5c1120;
+      border: 2px solid #f43f5e;
+      color: #fecdd3;
+    }
+    .secret-box.is-citizen {
+      background: #143626;
+      border: 2px solid #22c55e;
+      color: #bbf7d0;
+    }
+    .liar-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+    /* 4. 지목 룰렛 */
+    .roulette-card {
+      min-height: 195px;
+      background: #261e33;
+      border: 1px solid #3b2f4d;
+      border-radius: 18px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .cat-tag {
+      display: inline-block; margin: 0 auto 10px; background: #382c4a;
+      color: #ffbe0b; padding: 4px 12px; border-radius: 99px; font-size: 0.8rem; font-weight: 800;
+    }
+    .target-big { font-size: 2rem; font-weight: 900; color: #ffbe0b; margin-bottom: 10px; }
+    .mission-text { font-size: 1.12rem; font-weight: 800; color: #ffffff; line-height: 1.48; }
+
+    /* 5. 제비뽑기 */
+    .lot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .lot-card {
+      height: 104px;
+      background: linear-gradient(145deg, #2e243d, #221a2e);
+      border: 2px solid #46375c;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 1.05rem;
+    }
+    .lot-card.safe { background: #193829; border-color: #22c55e; color: #86efac; }
+    .lot-card.boom { background: #691421; border-color: #ef4444; color: #fca5a5; }
+
+    /* 6. 원판돌리기 */
+    .wheel-wrap { position: relative; width: 265px; height: 265px; margin: 10px auto 14px; }
+    .pointer {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent;
+      border-top: 22px solid #ffbe0b; z-index: 10;
+    }
+    canvas#wheelCanvas {
+      width: 265px; height: 265px; border-radius: 50%; border: 4px solid #3f3252;
+      transition: transform 3.2s cubic-bezier(0.15, 0.85, 0.2, 1);
+    }
+    .wheel-result { font-size: 1.2rem; font-weight: 900; color: #ffbe0b; min-height: 28px; }
+
+    /* 7. 훈민정음 */
+    .hunmin-card {
+      min-height: 205px; background: #261e33; border: 1px solid #3b2f4d;
+      border-radius: 18px; padding: 22px 16px; display: flex; flex-direction: column; justify-content: center;
+      margin-bottom: 12px;
+    }
+    .topic-badge {
+      display: inline-block; margin: 0 auto 12px; background: #ff5400; color: #fff;
+      padding: 6px 16px; border-radius: 99px; font-size: 1rem; font-weight: 900;
+    }
+    .chosung-big { font-size: 3.3rem; font-weight: 900; letter-spacing: 12px; color: #ffbe0b; margin: 6px 0 10px; }
+    .sub-guide { font-size: 0.88rem; color: #b8adc4; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>🍻 술자리 미니게임 </h1>
+      <p>사다리 · 스릴 주사위 · 라이어 · 지목룰렛 · 제비 · 원판 · 훈민정음</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="openTab('ladder', this)">🪜 사다리</button>
+      <button class="tab-btn" onclick="openTab('dice', this)">🎲 주사위</button>
+      <button class="tab-btn" onclick="openTab('liar', this)">🕵️ 라이어</button>
+      <button class="tab-btn" onclick="openTab('roulette', this)">🎯 지목룰렛</button>
+      <button class="tab-btn" onclick="openTab('lot', this)">🎟️ 제비뽑기</button>
+      <button class="tab-btn" onclick="openTab('wheel', this)">🎡 원판</button>
+      <button class="tab-btn" onclick="openTab('hunmin', this)">🇰🇷 훈민정음</button>
+    </div>
+
+    <div class="panel">
+      <!-- 1. 실시간 사다리타기 -->
+      <div id="tab-ladder" class="view active">
+        <div class="ctrl-row">
+          <span>인원 수:</span>
+          <select id="ladderCount" onchange="buildLadder()">
+            <option value="2">2명</option>
+            <option value="3">3명</option>
+            <option value="4" selected>4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+          </select>
+          <button class="btn-sub" onclick="buildLadder()">새 사다리 생성</button>
+        </div>
+        <div id="ladderPicks" class="ladder-picks"></div>
+        <canvas id="ladderCanvas" width="520" height="310"></canvas>
+        <div id="ladderStatus" class="ladder-status">위에서 출발 번호를 눌러 실시간 경로를 확인하세요!</div>
+
+        <div class="dest-editor">
+          <div class="dest-title">✏️ 아래 도착지 칸을 직접 수정하면 사다리 끝에 바로 반영됩니다</div>
+          <div id="destInputs" class="dest-inputs"></div>
+        </div>
+      </div>
+
+      <!-- 2. 스릴 주사위 -->
+      <div id="tab-dice" class="view">
+        <div class="ctrl-row">
+          <span>주사위 개수:</span>
+          <select id="diceCount" onchange="renderDicePlaceholders()">
+            <option value="1">1개 던지기</option>
+            <option value="2" selected>2개 던지기</option>
+          </select>
+        </div>
+        <div class="dice-stage">
+          <div id="diceRow" class="dice-row"></div>
+          <div id="diceSum" class="dice-sum">심장 쫄깃! 주사위를 던져보세요</div>
+          <div id="diceCall" class="dice-call"></div>
+        </div>
+        <button id="diceRollBtn" class="btn-main" onclick="rollDiceThrill()">🔥 스릴 주사위 던지기!</button>
+      </div>
+
+      <!-- 3. 라이어 게임 -->
+      <div id="tab-liar" class="view">
+        <div class="ctrl-row">
+          <span>참여 인원:</span>
+          <select id="liarPlayers" onchange="setupLiarRound()">
+            <option value="3">3명</option>
+            <option value="4" selected>4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+            <option value="7">7명</option>
+            <option value="8">8명</option>
+          </select>
+          <button class="btn-sub" onclick="setupLiarRound()">새 라운드 시작</button>
+        </div>
+
+        <div class="timer-box">
+          <div id="liarTimerNum" class="timer-num">⏱️ 15s</div>
+          <div id="liarTimerMsg" class="timer-alert">설명/추리 15초 타이머 준비됨</div>
+          <button class="btn-sub" onclick="startLiarTimer()">15초 시작</button>
+        </div>
+
+        <div class="liar-card">
+          <div id="liarTurn" class="liar-turn">1번 플레이어 차례</div>
+          <div id="liarCat" class="liar-cat">주제: -</div>
+          <div id="liarSecret" class="secret-box">남 안 보게 [내 역할 확인]을 누르세요</div>
+          <div class="liar-btns">
+            <button class="btn-sub" onclick="revealLiarRole()">👀 내 역할 확인</button>
+            <button id="liarNextBtn" class="btn-sub" onclick="nextLiarTurn()">🙈 숨기기 & 다음 사람</button>
+          </div>
+        </div>
+        <button id="liarRevealMainBtn" class="btn-main" onclick="showLiarAnswer()">🕵️ 라이어 & 제시어 공개!</button>
+      </div>
+
+      <!-- 4. 랜덤 벌칙·지목 룰렛 -->
+      <div id="tab-roulette" class="view">
+        <div class="ctrl-row">
+          <span>인원:</span>
+          <select id="peopleCount">
+            <option value="2">2명</option>
+            <option value="3">3명</option>
+            <option value="4" selected>4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+            <option value="7">7명</option>
+            <option value="8">8명</option>
+          </select>
+          <span>주제:</span>
+          <select id="missionCategory">
+            <option value="all" selected>전체 랜덤</option>
+            <option value="love">💘 이성 연락·스릴</option>
+            <option value="drink">🍺 음주·폭탄주</option>
+            <option value="target">👉 지목·지령</option>
+            <option value="talk">💬 진실·토크</option>
+            <option value="snack">🍗 안주·힐링</option>
+          </select>
+        </div>
+
+        <div class="timer-box">
+          <div id="rouletteTimerNum" class="timer-num">⏱️ 15s</div>
+          <div id="rouletteTimerMsg" class="timer-alert">뽑기 후 15초 안에 대답/실행!</div>
+          <button class="btn-sub" onclick="startRouletteTimer()">타이머 리셋</button>
+        </div>
+
+        <div class="roulette-card">
+          <div id="rCatTag" class="cat-tag">전체 랜덤</div>
+          <div id="rTarget" class="target-big">누구 걸릴까?</div>
+          <div id="rMission" class="mission-text">버튼을 눌러 당첨자와 미션을 뽑아보세요</div>
+        </div>
+        <button class="btn-main" onclick="spinRoulette()">랜덤 뽑기! (15초 자동 시작)</button>
+      </div>
+
+      <!-- 5. 제비뽑기 -->
+      <div id="tab-lot" class="view">
+        <div class="ctrl-row">
+          <span>인원:</span>
+          <select id="lotTotal" onchange="initLots()">
+            <option value="3">3명</option>
+            <option value="4" selected>4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+            <option value="7">7명</option>
+            <option value="8">8명</option>
+          </select>
+          <span>꽝:</span>
+          <select id="lotBooms" onchange="initLots()">
+            <option value="1" selected>1개</option>
+            <option value="2">2개</option>
+            <option value="3">3개</option>
+          </select>
+        </div>
+        <div id="lotGrid" class="lot-grid"></div>
+        <button class="btn-main" onclick="initLots()">제비 다시 섞기</button>
+      </div>
+
+      <!-- 6. 원판돌리기 -->
+      <div id="tab-wheel" class="view">
+        <div class="ctrl-row">
+          <input type="text" id="wheelInput" value="원샷, 폭탄주, 옆사람지목, 물한잔, 건배사, 통과" style="width:100%;" />
+        </div>
+        <div class="wheel-wrap">
+          <div class="pointer"></div>
+          <canvas id="wheelCanvas" width="265" height="265"></canvas>
+        </div>
+        <div id="wheelResult" class="wheel-result">원판을 돌려보세요!</div>
+        <button class="btn-main" onclick="spinWheel()">원판 돌리기!</button>
+      </div>
+
+      <!-- 7. 훈민정음 -->
+      <div id="tab-hunmin" class="view">
+        <div class="ctrl-row">
+          <span>주제 선택:</span>
+          <select id="hunminTopic">
+            <option value="random" selected>🎲 주제 완전 랜덤</option>
+            <option value="동물">🐶 동물</option>
+            <option value="음식">🍔 음식</option>
+            <option value="축구선수">⚽ 축구선수</option>
+            <option value="직업">💼 직업</option>
+            <option value="영화/드라마">🎬 영화·드라마</option>
+            <option value="나라/도시">✈️ 나라·도시</option>
+            <option value="브랜드">🏷️ 브랜드</option>
+            <option value="연예인">🎤 연예인</option>
+            <option value="아이돌">✨ 아이돌</option>
+            <option value="야구선수">⚾ 야구선수</option>
+            <option value="게임">🎮 게임</option>
+            <option value="만화/애니">📺 만화·애니</option>
+            <option value="과일/디저트">🍰 과일·디저트</option>
+            <option value="술/안주">🍻 술·안주</option>
+            <option value="계절/날씨">🌤️ 계절·날씨</option>
+            <option value="신체부위">🖐️ 신체부위</option>
+            <option value="학용품/가전">🔌 학용품·가전</option>
+            <option value="가구/인테리어">🛋️ 가구·인테리어</option>
+            <option value="탈것">🚗 탈것</option>
+            <option value="꽃/식물">🌿 꽃·식물</option>
+            <option value="운동/스포츠">🏋️ 운동·스포츠</option>
+            <option value="노래/음악">🎵 노래·음악</option>
+            <option value="색깔">🎨 색깔</option>
+            <option value="감정/성격">🎭 감정·성격</option>
+            <option value="역사/인물">📜 역사·인물</option>
+            <option value="앱/SNS">📱 앱·SNS</option>
+            <option value="편의점템">🏪 편의점템</option>
+            <option value="카페메뉴">☕ 카페메뉴</option>
+          </select>
+        </div>
+        <div class="hunmin-card">
+          <div id="hmTopicBadge" class="topic-badge">주제: 음식</div>
+          <div id="hmChosung" class="chosung-big">ㄱ ㅂ</div>
+          <div class="sub-guide">주제에 맞는 단어를 못 대거나 늦으면 한 잔!</div>
+        </div>
+        <button class="btn-main" onclick="nextHunmin()">새 초성 + 주제 뽑기!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openTab(name, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'wheel') drawWheel();
+      if (name === 'ladder') drawLadderBase();
+    }
+
+    /* ================= 1. 실시간 사다리타기 + 도착지 직접 수정 ================= */
+    const TOP_Y = 42;
+    const BOT_Y = 268;
+    const NUM_ROWS = 14;
+
+    let ladderCols = 4;
+    let ladderRungs = [];
+    let ladderResults = [];
+    let ladderAnimId = null;
+
+    function getRowY(row) {
+      return TOP_Y + ((BOT_Y - TOP_Y) / (NUM_ROWS + 1)) * (row + 1);
+    }
+
+    function getColX(col) {
+      const margin = 56;
+      const usable = 520 - margin * 2;
+      if (ladderCols === 1) return 260;
+      return margin + (usable / (ladderCols - 1)) * col;
+    }
+
+    function renderDestinationInputs() {
+      const box = document.getElementById('destInputs');
+      box.innerHTML = '';
+      for (let c = 0; c < ladderCols; c++) {
+        const wrap = document.createElement('div');
+        wrap.className = 'dest-item';
+
+        const lbl = document.createElement('label');
+        lbl.textContent = `도착지 ${c + 1}`;
+
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = ladderResults[c] || '';
+        inp.maxLength = 10;
+        inp.oninput = () => {
+          ladderResults[c] = inp.value.trim() || `도착${c + 1}`;
+          drawLadderBase();
+        };
+
+        wrap.appendChild(lbl);
+        wrap.appendChild(inp);
+        box.appendChild(wrap);
+      }
+    }
+
+    function buildLadder() {
+      cancelAnimationFrame(ladderAnimId);
+      ladderCols = Number(document.getElementById('ladderCount').value);
+      const basePool = ['원샷!', '통과', '폭탄주', '안주몰아주기', '옆사람지목', '면제권'];
+      ladderResults = [];
+      for (let i = 0; i < ladderCols; i++) {
+        ladderResults.push(basePool[i % basePool.length]);
+      }
+      ladderResults.sort(() => Math.random() - 0.5);
+
+      ladderRungs = [];
+      for (let row = 0; row < NUM_ROWS; row++) {
+        const y = getRowY(row);
+        const usedCols = new Set();
+        const maxPerRow = Math.max(1, Math.min(ladderCols - 1, ladderCols >= 5 ? 2 : 1));
+
+        for (let attempt = 0; attempt < ladderCols; attempt++) {
+          if (usedCols.size >= maxPerRow) break;
+          const col = Math.floor(Math.random() * (ladderCols - 1));
+          if (!usedCols.has(col) && !usedCols.has(col - 1) && !usedCols.has(col + 1)) {
+            usedCols.add(col);
+            ladderRungs.push({ row, col, y });
+          }
+        }
+      }
+
+      const picksDiv = document.getElementById('ladderPicks');
+      picksDiv.innerHTML = '';
+      for (let c = 0; c < ladderCols; c++) {
+        const b = document.createElement('button');
+        b.className = 'pick-num-btn';
+        b.textContent = `${c + 1}번 출발`;
+        b.onclick = () => animateLadder(c);
+        picksDiv.appendChild(b);
+      }
+
+      renderDestinationInputs();
+      document.getElementById('ladderStatus').textContent = '출발 번호를 누르면 실시간으로 내려갑니다!';
+      drawLadderBase();
+    }
+
+    function drawLadderBase(highlightPts = null) {
+      const canvas = document.getElementById('ladderCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 520, 310);
+
+      ctx.font = 'bold 13px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+
+      for (let c = 0; c < ladderCols; c++) {
+        const x = getColX(c);
+        ctx.fillStyle = '#ffbe0b';
+        ctx.fillText(`${c + 1}`, x, 24);
+
+        ctx.strokeStyle = '#635080';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x, TOP_Y);
+        ctx.lineTo(x, BOT_Y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ede4fa';
+        ctx.fillText((ladderResults[c] || '').slice(0, 8), x, 294);
+      }
+
+      ctx.strokeStyle = '#9279b8';
+      ctx.lineWidth = 3.5;
+      ladderRungs.forEach(r => {
+        const x1 = getColX(r.col);
+        const x2 = getColX(r.col + 1);
+        ctx.beginPath();
+        ctx.moveTo(x1, r.y);
+        ctx.lineTo(x2, r.y);
+        ctx.stroke();
+      });
+
+      if (highlightPts && highlightPts.length > 1) {
+        ctx.strokeStyle = '#ff5400';
+        ctx.lineWidth = 5.5;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(highlightPts[0].x, highlightPts[0].y);
+        for (let i = 1; i < highlightPts.length; i++) {
+          ctx.lineTo(highlightPts[i].x, highlightPts[i].y);
+        }
+        ctx.stroke();
+
+        const head = highlightPts[highlightPts.length - 1];
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, 7.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function computeLadderPath(startCol) {
+      const pts = [{ x: getColX(startCol), y: TOP_Y }];
+      let col = startCol;
+      const sorted = [...ladderRungs].sort((a, b) => a.row - b.row);
+
+      for (const r of sorted) {
+        if (r.col === col) {
+          pts.push({ x: getColX(col), y: r.y });
+          col += 1;
+          pts.push({ x: getColX(col), y: r.y });
+        } else if (r.col === col - 1) {
+          pts.push({ x: getColX(col), y: r.y });
+          col -= 1;
+          pts.push({ x: getColX(col), y: r.y });
+        }
+      }
+      pts.push({ x: getColX(col), y: BOT_Y });
+      return { pts, endCol: col };
+    }
+
+    function animateLadder(startCol) {
+      cancelAnimationFrame(ladderAnimId);
+      const { pts, endCol } = computeLadderPath(startCol);
+      let segIdx = 0;
+      let progress = 0;
+      document.getElementById('ladderStatus').textContent = `${startCol + 1}번 사다리 내려가는 중...`;
+
+      function step() {
+        if (segIdx >= pts.length - 1) {
+          drawLadderBase(pts);
+          document.getElementById('ladderStatus').textContent =
+            `${startCol + 1}번 도착 → [ ${ladderResults[endCol]} ]!`;
+          return;
+        }
+        const a = pts[segIdx];
+        const b = pts[segIdx + 1];
+        const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        progress += 4.5 / dist;
+
+        const partial = pts.slice(0, segIdx + 1);
+        if (progress < 1) {
+          partial.push({
+            x: a.x + (b.x - a.x) * progress,
+            y: a.y + (b.y - a.y) * progress
+          });
+          drawLadderBase(partial);
+          ladderAnimId = requestAnimationFrame(step);
+        } else {
+          partial.push(b);
+          drawLadderBase(partial);
+          segIdx += 1;
+          progress = 0;
+          ladderAnimId = requestAnimationFrame(step);
+        }
+      }
+      ladderAnimId = requestAnimationFrame(step);
+    }
+    buildLadder();
+
+    /* ================= 2. 스릴 주사위 ================= */
+    const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    let isRollingDice = false;
+
+    function renderDicePlaceholders() {
+      const cnt = Number(document.getElementById('diceCount').value);
+      const row = document.getElementById('diceRow');
+      row.innerHTML = '';
+      for (let i = 0; i < cnt; i++) {
+        const d = document.createElement('div');
+        d.className = 'die-box';
+        d.textContent = '?';
+        row.appendChild(d);
+      }
+      document.getElementById('diceSum').textContent = '주사위를 던져보세요!';
+      document.getElementById('diceCall').textContent = '';
+    }
+    renderDicePlaceholders();
+
+    function rollDiceThrill() {
+      if (isRollingDice) return;
+      isRollingDice = true;
+      const cnt = Number(document.getElementById('diceCount').value);
+      const row = document.getElementById('diceRow');
+      row.innerHTML = '';
+
+      const boxes = [];
+      for (let i = 0; i < cnt; i++) {
+        const d = document.createElement('div');
+        d.className = 'die-box thrill';
+        d.textContent = diceFaces[0];
+        row.appendChild(d);
+        boxes.push(d);
+      }
+
+      document.getElementById('diceSum').textContent = '구르는 중... 과연 어떤 숫자가?!';
+      document.getElementById('diceCall').textContent = '';
+
+      const spinInterval = setInterval(() => {
+        boxes.forEach(b => {
+          b.textContent = diceFaces[Math.floor(Math.random() * 6)];
+        });
+      }, 70);
+
+      setTimeout(() => {
+        clearInterval(spinInterval);
+        const vals = boxes.map(b => {
+          const n = Math.floor(Math.random() * 6) + 1;
+          b.classList.remove('thrill');
+          b.textContent = diceFaces[n - 1];
+          return n;
+        });
+        isRollingDice = false;
+        const sum = vals.reduce((a, b) => a + b, 0);
+
+        if (cnt === 2) {
+          document.getElementById('diceSum').textContent = `최종 합계: ${sum} (${vals[0]} + ${vals[1]})`;
+          if (vals[0] === vals[1]) {
+            document.getElementById('diceCall').textContent = '⚡ 더블 당첨! 지목한 사람과 한 잔 또는 한 번 더!';
+          } else if (sum <= 4) {
+            document.getElementById('diceCall').textContent = '🥶 최저 눈금! 본인 원샷 확정!';
+          } else if (sum >= 11) {
+            document.getElementById('diceCall').textContent = '👑 최고 눈금! 원하는 사람 한 명 지목해서 마시게 하기!';
+          } else {
+            document.getElementById('diceCall').textContent = '🙂 무난한 통과! 다음 사람에게 넘기세요';
+          }
+        } else {
+          document.getElementById('diceSum').textContent = `나온 숫자: ${vals[0]}`;
+          document.getElementById('diceCall').textContent = vals[0] === 1
+            ? '💀 1번 당첨! 원샷 한 잔!'
+            : vals[0] === 6
+              ? '🔥 6번 대박! 한 명 지목해서 원샷!'
+              : `${vals[0]}잔 마시기 또는 지목!`;
+        }
+      }, 850);
+    }
+
+    /* ================= 3. 라이어 게임 + 마지막 턴 자동 확인 + 15초 타이머 ================= */
+    const liarBank = [
+      { cat: '음식', word: '치킨' },
+      { cat: '음식', word: '삼겹살' },
+      { cat: '음식', word: '라면' },
+      { cat: '음식', word: '피자' },
+      { cat: '장소', word: '노래방' },
+      { cat: '장소', word: 'PC방' },
+      { cat: '장소', word: '편의점' },
+      { cat: '장소', word: '찜질방' },
+      { cat: '직업', word: '경찰관' },
+      { cat: '직업', word: '소방관' },
+      { cat: '직업', word: '요리사' },
+      { cat: '물건', word: '이어폰' },
+      { cat: '물건', word: '우산' },
+      { cat: '물건', word: '지갑' }
+    ];
+    let liarIdx = 0, liarWord = '', liarCat = '', turnIdx = 1, totalLiarPlayers = 4;
+    let liarTimerId = null;
+
+    function startLiarTimer() {
+      clearInterval(liarTimerId);
+      let sec = 15;
+      const numEl = document.getElementById('liarTimerNum');
+      const msgEl = document.getElementById('liarTimerMsg');
+      numEl.className = 'timer-num';
+      msgEl.className = 'timer-alert';
+      numEl.textContent = `⏱️ ${sec}s`;
+      msgEl.textContent = '15초 안에 대답/설명하세요!';
+
+      liarTimerId = setInterval(() => {
+        sec -= 1;
+        if (sec > 0) {
+          numEl.textContent = `⏱️ ${sec}s`;
+          if (sec <= 5) numEl.className = 'timer-num urgent';
+        } else {
+          clearInterval(liarTimerId);
+          numEl.textContent = '⏱️ 0s';
+          numEl.className = 'timer-num urgent';
+          msgEl.className = 'timer-alert timeout';
+          msgEl.textContent = '🚨 15초 초과! 대답 못 한 사람 벌칙!';
+        }
+      }, 1000);
+    }
+
+    function resetLiarTimerUI() {
+      clearInterval(liarTimerId);
+      const numEl = document.getElementById('liarTimerNum');
+      const msgEl = document.getElementById('liarTimerMsg');
+      numEl.className = 'timer-num';
+      msgEl.className = 'timer-alert';
+      numEl.textContent = '⏱️ 15s';
+      msgEl.textContent = '설명/추리 15초 타이머 준비됨';
+    }
+
+    function setupLiarRound() {
+      totalLiarPlayers = Number(document.getElementById('liarPlayers').value);
+      const picked = liarBank[Math.floor(Math.random() * liarBank.length)];
+      liarCat = picked.cat;
+      liarWord = picked.word;
+      liarIdx = Math.floor(Math.random() * totalLiarPlayers) + 1;
+      turnIdx = 1;
+
+      const mainBtn = document.getElementById('liarRevealMainBtn');
+      mainBtn.classList.remove('reveal-ready');
+      mainBtn.textContent = '🕵️ 라이어 & 제시어 공개!';
+
+      const nextBtn = document.getElementById('liarNextBtn');
+      nextBtn.style.display = 'inline-block';
+      nextBtn.textContent = totalLiarPlayers === 1 ? '✅ 확인 완료 (결과 보기)' : '🙈 숨기기 & 다음 사람';
+
+      updateLiarHeader();
+      hideLiarRole();
+      resetLiarTimerUI();
+    }
+
+    function updateLiarHeader() {
+      document.getElementById('liarTurn').textContent = `${turnIdx}번 플레이어 차례 (총 ${totalLiarPlayers}명)`;
+      document.getElementById('liarCat').textContent = `주제 카테고리: ${liarCat}`;
+    }
+
+    function revealLiarRole() {
+      const box = document.getElementById('liarSecret');
+      if (turnIdx === liarIdx) {
+        box.className = 'secret-box is-liar';
+        box.textContent = '😈 당신은 라이어입니다!';
+      } else {
+        box.className = 'secret-box is-citizen';
+        box.textContent = `제시어: [ ${liarWord} ]`;
+      }
+    }
+
+    function hideLiarRole() {
+      const box = document.getElementById('liarSecret');
+      box.className = 'secret-box';
+      box.textContent = '남 안 보게 [내 역할 확인]을 누르세요';
+    }
+
+    function nextLiarTurn() {
+      if (turnIdx >= totalLiarPlayers) {
+        // 마지막 턴까지 넘겼을 때 바로 확인 누르기 모드로 전환
+        hideLiarRole();
+        document.getElementById('liarTurn').textContent = '모든 인원 역할 확인 완료!';
+        document.getElementById('liarNextBtn').style.display = 'none';
+        const mainBtn = document.getElementById('liarRevealMainBtn');
+        mainBtn.classList.add('reveal-ready');
+        mainBtn.textContent = '🎯 전원 확인 끝! [라이어 & 제시어 확인하기]';
+        startLiarTimer();
+        return;
+      }
+      turnIdx += 1;
+      updateLiarHeader();
+      hideLiarRole();
+    }
+
+    function showLiarAnswer() {
+      clearInterval(liarTimerId);
+      const box = document.getElementById('liarSecret');
+      box.className = 'secret-box is-liar';
+      box.textContent = `정답: ${liarIdx}번 라이어! (제시어: ${liarWord})`;
+      const mainBtn = document.getElementById('liarRevealMainBtn');
+      mainBtn.classList.remove('reveal-ready');
+      mainBtn.textContent = '🕵️ 라이어 & 제시어 공개!';
+    }
+    setupLiarRound();
+
+    /* ================= 4. 랜덤 벌칙·지목 룰렛 + 15초 타이머 ================= */
+    const missionPool = {
+      love: [
+        '20살~40살 이성에게 지금 바로 연락하기! 못할 시 폭탄주!',
+        '20살~40살 이성에게 "지금 뭐해? 한잔할래?" 카톡 보내기! 못할 시 폭탄주!',
+        '20살~40살 이성에게 전화 걸어서 5초 이상 대화하기! 못할 시 폭탄주!',
+        '연락처 속 20살~40살 이성에게 최근 안부 카톡 보내기! 못할 시 폭탄주!',
+        'SNS나 메신저로 20살~40살 이성에게 호감 멘트 보내기! 못할 시 폭탄주!'
+      ],
+      drink: [
+        '시원하게 폭탄주 한 잔 제조 후 원샷!',
+        '소주 한 잔 깔끔하게 원샷!',
+        '술잔 비어있는 사람 다 같이 채우고 짠!',
+        '흑기사/흑장미 지목 가능! (없으면 본인 원샷)',
+        '눈 마주치는 사람 한 명 지목해서 같이 마시기!'
+      ],
+      target: [
+        '오른쪽 사람과 러브샷!',
+        '왼쪽 사람 지목해서 같이 한 잔!',
+        '지금 제일 말없는 사람 지목해서 마시게 하기!',
+        '오늘 제일 잘 꾸미고 온 사람 지목해서 건배사 시키기!',
+        '방금 전까지 휴대폰 만지고 있던 사람 지목!',
+        '나와 생일이 가장 가까운 사람 지목해서 같이 마시기!'
+      ],
+      talk: [
+        '최근 가장 웃겼던 TMI 하나 공개하기 (거부 시 폭탄주)',
+        '첫인상과 지금 인상이 가장 다른 사람 솔직하게 말하기!',
+        '최근 1주일 내 가장 돈 아까웠던 소비 고백하기!',
+        '오늘 자리에서 가장 의외의 매력이 있는 사람 꼽기!',
+        '취하면 나오는 본인만의 술버릇 솔직 고백!'
+      ],
+      snack: [
+        '가장 맛있는 안주 한 점 크게 먹기!',
+        '시원한 물 한 컵 들이켜고 휴식 타임!',
+        '양옆 사람에게 맛있는 안주 하나씩 챙겨주기!',
+        '면제권 획득! 다음 벌칙 1회 방어권!',
+        '다 같이 박수 치면서 건배 한 번 외치고 쉬어가기!'
+      ]
+    };
+
+    const catNames = {
+      love: '💘 이성 연락·스릴',
+      drink: '🍺 음주·폭탄주',
+      target: '👉 지목·지령',
+      talk: '💬 진실·토크',
+      snack: '🍗 안주·힐링'
+    };
+
+    let rouletteTimerId = null;
+
+    function startRouletteTimer() {
+      clearInterval(rouletteTimerId);
+      let sec = 15;
+      const numEl = document.getElementById('rouletteTimerNum');
+      const msgEl = document.getElementById('rouletteTimerMsg');
+      numEl.className = 'timer-num';
+      msgEl.className = 'timer-alert';
+      numEl.textContent = `⏱️ ${sec}s`;
+      msgEl.textContent = '15초 안에 실행/대답하세요!';
+
+      rouletteTimerId = setInterval(() => {
+        sec -= 1;
+        if (sec > 0) {
+          numEl.textContent = `⏱️ ${sec}s`;
+          if (sec <= 5) numEl.className = 'timer-num urgent';
+        } else {
+          clearInterval(rouletteTimerId);
+          numEl.textContent = '⏱️ 0s';
+          numEl.className = 'timer-num urgent';
+          msgEl.className = 'timer-alert timeout';
+          msgEl.textContent = '🚨 15초 초과! 미수행 벌칙(폭탄주/원샷)!';
+        }
+      }, 1000);
+    }
+
+    function spinRoulette() {
+      const count = Number(document.getElementById('peopleCount').value);
+      const selectedCat = document.getElementById('missionCategory').value;
+      const keys = Object.keys(missionPool);
+      const chosenCat = selectedCat === 'all' ? keys[Math.floor(Math.random() * keys.length)] : selectedCat;
+
+      const list = missionPool[chosenCat];
+      const person = Math.floor(Math.random() * count) + 1;
+      const mission = list[Math.floor(Math.random() * list.length)];
+
+      document.getElementById('rCatTag').textContent = catNames[chosenCat];
+      document.getElementById('rTarget').textContent = `${person}번 당첨!`;
+      document.getElementById('rMission').textContent = mission;
+      startRouletteTimer();
+    }
+
+    /* ================= 5. 제비뽑기 ================= */
+    function initLots() {
+      const total = Number(document.getElementById('lotTotal').value);
+      let booms = Number(document.getElementById('lotBooms').value);
+      if (booms >= total) booms = total - 1;
+
+      const items = Array(total).fill('통과');
+      for (let i = 0; i < booms; i++) items[i] = '꽝! 폭탄주';
+      items.sort(() => Math.random() - 0.5);
+
+      const grid = document.getElementById('lotGrid');
+      grid.innerHTML = '';
+      items.forEach((res, idx) => {
+        const card = document.createElement('div');
+        card.className = 'lot-card';
+        card.innerHTML = `<span>${idx + 1}번 제비</span><small style="color:#b4a9c2;margin-top:4px;">확인</small>`;
+        card.onclick = () => {
+          if (card.dataset.opened) return;
+          card.dataset.opened = '1';
+          if (res.includes('꽝')) {
+            card.classList.add('boom');
+            card.innerHTML = `💥<br>${res}`;
+          } else {
+            card.classList.add('safe');
+            card.innerHTML = `🎉<br>${res}`;
+          }
+        };
+        grid.appendChild(card);
+      });
+    }
+    initLots();
+
+    /* ================= 6. 원판돌리기 ================= */
+    const wheelColors = ['#ff5400', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+    let currentAngle = 0, isSpinning = false;
+
+    function getWheelItems() {
+      const raw = document.getElementById('wheelInput').value;
+      const list = raw.split(',').map(s => s.trim()).filter(Boolean);
+      return list.length >= 2 ? list : ['폭탄주', '통과'];
+    }
+
+    function drawWheel() {
+      const canvas = document.getElementById('wheelCanvas');
+      const ctx = canvas.getContext('2d');
+      const items = getWheelItems();
+      const arc = (2 * Math.PI) / items.length;
+      ctx.clearRect(0, 0, 265, 265);
+      items.forEach((label, i) => {
+        const start = i * arc - Math.PI / 2;
+        const end = start + arc;
+        ctx.beginPath();
+        ctx.moveTo(132.5, 132.5);
+        ctx.arc(132.5, 132.5, 128, start, end);
+        ctx.closePath();
+        ctx.fillStyle = wheelColors[i % wheelColors.length];
+        ctx.fill();
+        ctx.strokeStyle = '#1c1724';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(132.5, 132.5);
+        ctx.rotate(start + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px Pretendard, sans-serif';
+        ctx.fillText(label.slice(0, 8), 114, 5);
+        ctx.restore();
+      });
+    }
+    document.getElementById('wheelInput').addEventListener('input', drawWheel);
+    drawWheel();
+
+    function spinWheel() {
+      if (isSpinning) return;
+      isSpinning = true;
+      drawWheel();
+      const items = getWheelItems();
+      currentAngle += 360 * (5 + Math.floor(Math.random() * 4)) + Math.floor(Math.random() * 360);
+      document.getElementById('wheelCanvas').style.transform = `rotate(${currentAngle}deg)`;
+      document.getElementById('wheelResult').textContent = '돌아가는 중...';
+
+      setTimeout(() => {
+        isSpinning = false;
+        const normalized = (360 - (currentAngle % 360)) % 360;
+        const sliceDeg = 360 / items.length;
+        const winIdx = Math.floor(normalized / sliceDeg) % items.length;
+        document.getElementById('wheelResult').textContent = `결과: [ ${items[winIdx]} ] 당첨!`;
+      }, 3250);
+    }
+
+    /* ================= 7. 훈민정음 (28개 주제 확장) ================= */
+    const chosungChars = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+    const hunminTopics = [
+      '동물', '음식', '축구선수', '직업', '영화/드라마', '나라/도시', '브랜드', '연예인',
+      '아이돌', '야구선수', '게임', '만화/애니', '과일/디저트', '술/안주', '계절/날씨',
+      '신체부위', '학용품/가전', '가구/인테리어', '탈것', '꽃/식물', '운동/스포츠',
+      '노래/음악', '색깔', '감정/성격', '역사/인물', '앱/SNS', '편의점템', '카페메뉴'
+    ];
+
+    function nextHunmin() {
+      const sel = document.getElementById('hunminTopic').value;
+      const topic = sel === 'random'
+        ? hunminTopics[Math.floor(Math.random() * hunminTopics.length)]
+        : sel;
+      const c1 = chosungChars[Math.floor(Math.random() * chosungChars.length)];
+      const c2 = chosungChars[Math.floor(Math.random() * chosungChars.length)];
+      document.getElementById('hmTopicBadge').textContent = `주제: ${topic}`;
+      document.getElementById('hmChosung').textContent = `${c1} ${c2}`;
+    }
+    nextHunmin();
+  </script>
+</body>
+</html>
